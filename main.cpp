@@ -6,15 +6,15 @@
  */
 
 //debug
-//#define MSP430_SERIAL_DEBUG
+#define MSP430_SERIAL_DEBUG
 #include "spi_msp430.h"
 
 #include "RF24.h"
 #include <msp430.h>
 #include "remote_defines.h"
+#include "flash.h"
 
 
-//#define MSP430_SERIAL_DEBUG
 extern "C"
 {
 #include "spi.h"
@@ -25,15 +25,20 @@ extern "C"
 
 
 // PORT 2
-#define L1_BUTTON	0x02
-#define R1_BUTTON	0x04
-#define L2_BUTTON	0x10
-#define R2_BUTTON	0x20
+#define L1_BUTTON		0x02
+#define R1_BUTTON		0x04
+#define L2_BUTTON		0x10
+#define R2_BUTTON		0x20
 
 // PORT 2
-#define RED_LED		0x80
-#define GREEN_LED	0x40
-
+#define RED_LED			0x80
+#define GREEN_LED		0x40
+#define RED_LED_ON		P2OUT |= RED_LED;
+#define RED_LED_OFF		P2OUT &= ~RED_LED;
+#define RED_LED_BLINK	P2OUT ^= RED_LED;
+#define GREEN_LED_ON	P2OUT |= GREEN_LED;
+#define GREEN_LED_OFF	P2OUT &= ~GREEN_LED;
+#define GREEN_LED_BLINK	P2OUT ^= GREEN_LED;
 
 
 // Function prototypes
@@ -49,6 +54,9 @@ void calibrate(void);
 void read_buttons(uint8_t &buttons);
 struct timer_msp subtract(struct timer_msp a, struct timer_msp b);
 void refresh_activity(void);
+void write_calibration_to_flash(Analog p1, Analog p2);
+void read_calibration_from_flash(Analog &p1, Analog &p2);
+
 
 struct timer_msp timer_sleep;
 unsigned int ADC_values[4];
@@ -58,39 +66,56 @@ bool activity = true;
 unsigned long int last_blink_millis = 0;
 Analog analog_left, analog_right;
 struct timer_msp activity_time;
+bool start_list = 0;
+bool send_request= 0;
 
 // main loop
 int main(void)
 {
-	WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT~
+	//WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT~
+	WDTCTL = WDT_MDLY_32;                     // Set Watchdog Timer interval to ~30ms
+	IE1 |= WDTIE;
+
 	BCSCTL1 = CALBC1_1MHZ;            // Set DCO to 1MHz
 	DCOCTL = CALDCO_1MHZ;
 
+	// setup power pin
+	setup_power();
+	GREEN_LED_ON;
+
 	unsigned long int last_millis = 0;
+
+	// initialize timer
 	default_timer();
 
+	// initialize flash
+	flash_init();
 
 #ifdef MSP430_SERIAL_DEBUG
 	serial_init(9600);
 #endif
+
 	// Setup ADC
 	setup_adc();
-	setup_power();
+
 #ifdef MSP430_SERIAL_DEBUG
 	cio_printf("Init- ADC\n");
 #endif
 
 	// Setup push buttons
 	setup_push_buttons();
+
+	// Setup LEDs
 	setup_leds();
 
-	__bis_SR_register(GIE);       // Enter LPM0, interrupts enabled
+	// interrupts enabled
+	__bis_SR_register(GIE);
 
 	// ____________________________________________________________
 	RC_remote ferrari;
 	ferrari.steer = 0;
 	ferrari.linear = 0;
-	//ferrari.buttons = 0;
+	ferrari.buttons = 0;
 
 	RF24 radio = RF24();
 
@@ -105,7 +130,7 @@ int main(void)
 
 	// optionally, reduce the payload size.  seems to
 	// improve reliability
-	radio.setPayloadSize(sizeof(ferrari));
+	radio.setPayloadSize(sizeof(RC_remote));
 
 	radio.setDataRate(RF24_250KBPS);
 
@@ -119,22 +144,33 @@ int main(void)
 	// Dump the configuration of the rf unit for debugging
 	radio.printDetails();
 
-	P2OUT |= GREEN_LED;
-
 	analog_left.deadzone = 15;
 	analog_right.deadzone = 15;
 
-	// calibrate remote
-	calibrate();
+	read_calibration_from_flash(analog_left, analog_right);
 
-	while(remote_on)
+	GREEN_LED_ON;
+	delay(100);
+	GREEN_LED_OFF;
+
+	while(1)
 	{
 		// First, scan potentiometers
 		uint8_t buttons;
 		adc_sample(ADC_values);
 		read_buttons(buttons);
+		ferrari.buttons = buttons;
 
+		if(buttons == 0x0F)			// All buttons pressed...
+		{
+			// Then, stop listening so we can talk.
+			radio.startListening();
+			radio.stopListening();
 
+			// calibrate remote
+			calibrate();
+			write_calibration_to_flash(analog_left, analog_right);
+		}
 
 		if( millis()- last_millis > SEND_MSG_TIME)
 		{
@@ -153,11 +189,54 @@ int main(void)
 			radio.stopListening();
 
 			//send car controll cmd
-			radio.write(&ferrari, sizeof(ferrari));
-
-			//__bis_SR_register(CPUOFF + GIE);
+			if(send_request)
+			{
+				send_request = 0;
+				start_list = 1;
+				ferrari.buttons |= ASK_BIT;
+			}
+			radio.write(&ferrari, sizeof(RC_remote));
 
 		}
+
+		if(start_list)
+		{
+			start_list = 0;
+			radio.startListening();
+
+			__bis_SR_register(GIE);
+			// Wait here until we get a response, or timeout (250ms)
+			bool timeout = false;
+			last_millis = millis();
+
+			while(!radio.available() && !timeout)
+			{
+
+				if(millis() - last_millis > 100)
+				{
+					timeout = true;
+				}
+
+			}
+
+			if(!timeout)
+			{
+				uint8_t response;
+				radio.read( &response, sizeof(uint8_t) );
+
+				if(response == 1)
+				{
+					RED_LED_ON;
+				}
+				else
+				{
+					RED_LED_OFF;
+				}
+			}
+			radio.stopListening();
+		}
+
+		// update activity timer
 		refresh_activity();
 	}
 
@@ -171,7 +250,7 @@ int main(void)
 
 void setup_adc(void)
 {
-	// Scan P1.3 and P1.4
+	// Scan P1.3 and P1.0
 
 	ADC10CTL1 = INCH_3 + CONSEQ_3;
 	ADC10CTL0 = ADC10SHT_2 + MSC + ADC10ON + ADC10IE;
@@ -211,6 +290,8 @@ void power_off(void)
 
 void calibrate(void)
 {
+	GREEN_LED_OFF;
+	RED_LED_OFF;
 	activity = true;
 	activity_time.s = timer0.s;
 	activity_time.ms = timer0.ms;
@@ -238,18 +319,18 @@ void calibrate(void)
 		if(millis() - last_blink_millis > 500)
 		{
 			last_blink_millis = millis();
-			P2OUT ^= RED_LED;
+			RED_LED_BLINK;
 		}
 
 		if(analog_left.max - analog_left.center > 50 && analog_right.max - analog_right.center > 50 &&
 				analog_left.center - analog_left.min > 50 && analog_right.center - analog_right.min > 50)
 		{
-			P2OUT |= GREEN_LED;
+			GREEN_LED_ON;
 			calibrated = true;
 		}
 		else
 		{
-			P2OUT &= ~GREEN_LED;
+			GREEN_LED_OFF;
 		}
 
 		adc_sample(ADC_values);
@@ -282,7 +363,8 @@ void calibrate(void)
 	{
 		refresh_activity();
 	}
-	P2OUT &= ~(RED_LED + GREEN_LED);
+	GREEN_LED_OFF;
+	RED_LED_OFF;
 }
 
 void read_buttons(uint8_t &buttons)
@@ -398,10 +480,9 @@ void refresh_activity(void)
 		struct timer_msp temp;
 		temp = subtract(timer0, activity_time);
 
-		if(temp.s > 120)
+		if(temp.s > 20)
 		{
 			power_off();
-			//__bis_SR_register(LPM4_bits);
 		}
 	}
 }
@@ -419,6 +500,63 @@ struct timer_msp subtract( struct timer_msp a, struct timer_msp b)
 	return temp;
 }
 
+void write_calibration_to_flash(Analog p1, Analog p2)
+{
+	unsigned char temp[12];
+	temp[0] = p1.min & 0xFF;
+	temp[1] = (p1.min & 0xFF00) >> 8;
+	temp[2] = p1.center & 0xFF;
+	temp[3] = (p1.center & 0xFF00) >> 8;
+	temp[4] = p1.max & 0xFF;
+	temp[5] = (p1.max & 0xFF00) >> 8;
+
+	temp[6] = p2.min & 0xFF;
+	temp[7] = (p2.min & 0xFF00) >> 8;
+	temp[8] = p2.center & 0xFF;
+	temp[9] = (p2.center & 0xFF00) >> 8;
+	temp[10] = p2.max & 0xFF;
+	temp[11] = (p2.max & 0xFF00) >> 8;
+
+	write_SegC(temp, 12);
+}
+
+void read_calibration_from_flash(Analog &p1, Analog &p2)
+{
+	unsigned char frase[12];
+	read_SegC(frase, 12, 0);
+	int temp_value;
+
+	temp_value = frase[1];
+	temp_value = temp_value << 8;
+	temp_value |= frase[0];
+	p1.min = temp_value;
+
+	temp_value = frase[3];
+	temp_value = temp_value << 8;
+	temp_value |= frase[2];
+	p1.center = temp_value;
+
+	temp_value = frase[5];
+	temp_value = temp_value << 8;
+	temp_value |= frase[4];
+	p1.max = temp_value;
+
+	temp_value = frase[7];
+	temp_value = temp_value << 8;
+	temp_value |= frase[6];
+	p2.min = temp_value;
+
+	temp_value = frase[9];
+	temp_value = temp_value << 8;
+	temp_value |= frase[8];
+	p2.center = temp_value;
+
+	temp_value = frase[11];
+	temp_value = temp_value << 8;
+	temp_value |= frase[10];
+	p2.max = temp_value;
+}
+
 // ADC10 interrupt service routine
 #pragma vector=ADC10_VECTOR
 __interrupt void ADC10_ISR(void)
@@ -426,4 +564,17 @@ __interrupt void ADC10_ISR(void)
   __bic_SR_register_on_exit(LPM0_bits + GIE);        // Clear CPUOFF bit from 0(SR)
 }
 
+// Watchdog Timer interrupt service routine
+#pragma vector=WDT_VECTOR
+__interrupt void watchdog_timer(void)
+{
+	static char c = 0;
+	c++;
+	if(c > 33)
+	{
+		c = 0;
+		send_request = 1;
+		GREEN_LED_BLINK
+	}
+}
 

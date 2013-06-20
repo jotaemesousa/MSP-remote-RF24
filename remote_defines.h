@@ -27,14 +27,15 @@
 #define ADC_ANALOG_LEFT		3
 #define ADC_ANALOG_RIGHT	0
 
-#define SEND_MSG_TIME		100
+#define SEND_MSG_TIME		64
 
+#define ASK_BIT				0x10
 
 typedef struct ROSpberryRemote
 {
 	int16_t linear;
 	int16_t steer;
-	//uint8_t buttons;
+	uint8_t buttons;
 
 }RC_remote;
 

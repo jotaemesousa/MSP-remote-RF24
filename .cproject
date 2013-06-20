@@ -32,7 +32,7 @@
 									<listOptionValue builtIn="false" value="/home/joao/msp430/include/libemb"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}}&quot;"/>
 								</option>
-								<option id="dk.xpg.msp430eclipse.compiler.option.optimization.flags.682835541" name="Other optimization flags" superClass="dk.xpg.msp430eclipse.compiler.option.optimization.flags" value="-fpack-struct" valueType="string"/>
+								<option id="dk.xpg.msp430eclipse.compiler.option.optimization.flags.682835541" name="Other optimization flags" superClass="dk.xpg.msp430eclipse.compiler.option.optimization.flags" value="" valueType="string"/>
 								<inputType id="dk.xpg.msp430eclipse.tool.compiler.gcc.input.1569041386" name="C Source File" superClass="dk.xpg.msp430eclipse.tool.compiler.gcc.input"/>
 								<inputType id="dk.xpg.msp430eclipse.tool.compiler.gcc.input.cc.689716839" name="C++ Source File" superClass="dk.xpg.msp430eclipse.tool.compiler.gcc.input.cc"/>
 							</tool>
@@ -79,6 +79,14 @@
 							<tool id="dk.xpg.msp430eclipse.tool.compiler.gcc.1306565122" name="MSP430 C Compiler" superClass="dk.xpg.msp430eclipse.tool.compiler.gcc">
 								<option defaultValue="dk.xpg.msp430eclipse.compiler.option.optimization.level.most" id="dk.xpg.msp430eclipse.compiler.option.optimization.level.416639315" name="Optimization Level" superClass="dk.xpg.msp430eclipse.compiler.option.optimization.level" valueType="enumerated"/>
 								<option defaultValue="dk.xpg.msp430eclipse.compiler.option.debugging.level.none" id="dk.xpg.msp430eclipse.compiler.option.debugging.level.1065571172" name="Debugging Level" superClass="dk.xpg.msp430eclipse.compiler.option.debugging.level" valueType="enumerated"/>
+								<option id="dk.xpg.msp430eclipse.compiler.option.includes.paths.534969888" name="Include paths (-I)" superClass="dk.xpg.msp430eclipse.compiler.option.includes.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="/home/joao/msp430/include/libemb"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}}&quot;"/>
+								</option>
+								<option id="dk.xpg.msp430eclipse.compiler.option.symbols.defined.903821659" superClass="dk.xpg.msp430eclipse.compiler.option.symbols.defined" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="MSP430"/>
+									<listOptionValue builtIn="false" value="DELAY_MSP430"/>
+								</option>
 								<inputType id="dk.xpg.msp430eclipse.tool.compiler.gcc.input.39028044" name="C Source File" superClass="dk.xpg.msp430eclipse.tool.compiler.gcc.input"/>
 								<inputType id="dk.xpg.msp430eclipse.tool.compiler.gcc.input.cc.976582994" name="C++ Source File" superClass="dk.xpg.msp430eclipse.tool.compiler.gcc.input.cc"/>
 							</tool>
@@ -86,6 +94,13 @@
 								<inputType id="dk.xpg.msp430eclipse.tool.assembler.input.450107597" name="Assembler Files" superClass="dk.xpg.msp430eclipse.tool.assembler.input"/>
 							</tool>
 							<tool id="dk.xpg.msp430eclipse.tool.linker.gcc.1329496060" name="MSP430 Linker" superClass="dk.xpg.msp430eclipse.tool.linker.gcc">
+								<option id="dk.xpg.msp430eclipse.linker.option.libraries.libraries.1598274935" name="Libraries (-l)" superClass="dk.xpg.msp430eclipse.linker.option.libraries.libraries" valueType="libFiles">
+									<listOptionValue builtIn="false" value="conio"/>
+									<listOptionValue builtIn="false" value="serial"/>
+								</option>
+								<option id="dk.xpg.msp430eclipse.linker.option.libraries.searchPath.274924390" name="Libraries search path (-L)" superClass="dk.xpg.msp430eclipse.linker.option.libraries.searchPath" valueType="libPaths">
+									<listOptionValue builtIn="false" value="/home/joao/msp430/lib"/>
+								</option>
 								<inputType id="dk.xpg.msp430eclipse.tool.linker.input.168611248" name="Object Files" superClass="dk.xpg.msp430eclipse.tool.linker.input"/>
 							</tool>
 							<tool id="dk.xpg.msp430eclipse.tool.archiver.gcc.434172441" name="MSP430 Archiver" superClass="dk.xpg.msp430eclipse.tool.archiver.gcc"/>
