@@ -22,7 +22,7 @@
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="dk.xpg.msp430eclipse.targetplatform.msp430.1900574144" isAbstract="false" name="MSP430 Cross-Target" osList="all" superClass="dk.xpg.msp430eclipse.targetplatform.msp430"/>
 							<builder buildPath="${workspace_loc:/MSP_remote_RF24/Debug}" id="dk.xpg.msp430eclipse.target.gnu.builder.977280653" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="MSP430 GNU Make Builder" superClass="dk.xpg.msp430eclipse.target.gnu.builder"/>
 							<tool id="dk.xpg.msp430eclipse.tool.compiler.gcc.2109166548" name="MSP430 C Compiler" superClass="dk.xpg.msp430eclipse.tool.compiler.gcc">
-								<option defaultValue="dk.xpg.msp430eclipse.compiler.option.optimization.level.none" id="dk.xpg.msp430eclipse.compiler.option.optimization.level.1797329154" name="Optimization Level" superClass="dk.xpg.msp430eclipse.compiler.option.optimization.level" value="dk.xpg.msp430eclipse.compiler.option.optimization.level.more" valueType="enumerated"/>
+								<option defaultValue="dk.xpg.msp430eclipse.compiler.option.optimization.level.none" id="dk.xpg.msp430eclipse.compiler.option.optimization.level.1797329154" name="Optimization Level" superClass="dk.xpg.msp430eclipse.compiler.option.optimization.level" value="dk.xpg.msp430eclipse.compiler.option.optimization.level.most" valueType="enumerated"/>
 								<option defaultValue="dk.xpg.msp430eclipse.compiler.option.debugging.level.default" id="dk.xpg.msp430eclipse.compiler.option.debugging.level.490508924" name="Debugging Level" superClass="dk.xpg.msp430eclipse.compiler.option.debugging.level" valueType="enumerated"/>
 								<option id="dk.xpg.msp430eclipse.compiler.option.symbols.defined.10290767" name="Defined Symbols (-D)" superClass="dk.xpg.msp430eclipse.compiler.option.symbols.defined" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="MSP430"/>
@@ -32,7 +32,7 @@
 									<listOptionValue builtIn="false" value="/home/joao/msp430/include/libemb"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}}&quot;"/>
 								</option>
-								<option id="dk.xpg.msp430eclipse.compiler.option.optimization.flags.682835541" name="Other optimization flags" superClass="dk.xpg.msp430eclipse.compiler.option.optimization.flags" value="" valueType="string"/>
+								<option id="dk.xpg.msp430eclipse.compiler.option.optimization.flags.682835541" name="Other optimization flags" superClass="dk.xpg.msp430eclipse.compiler.option.optimization.flags" value="-fpack-struct" valueType="string"/>
 								<inputType id="dk.xpg.msp430eclipse.tool.compiler.gcc.input.1569041386" name="C Source File" superClass="dk.xpg.msp430eclipse.tool.compiler.gcc.input"/>
 								<inputType id="dk.xpg.msp430eclipse.tool.compiler.gcc.input.cc.689716839" name="C++ Source File" superClass="dk.xpg.msp430eclipse.tool.compiler.gcc.input.cc"/>
 							</tool>
@@ -83,7 +83,7 @@
 									<listOptionValue builtIn="false" value="/home/joao/msp430/include/libemb"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}}&quot;"/>
 								</option>
-								<option id="dk.xpg.msp430eclipse.compiler.option.symbols.defined.903821659" superClass="dk.xpg.msp430eclipse.compiler.option.symbols.defined" valueType="definedSymbols">
+								<option id="dk.xpg.msp430eclipse.compiler.option.symbols.defined.903821659" name="Defined Symbols (-D)" superClass="dk.xpg.msp430eclipse.compiler.option.symbols.defined" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="MSP430"/>
 									<listOptionValue builtIn="false" value="DELAY_MSP430"/>
 								</option>

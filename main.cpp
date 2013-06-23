@@ -6,7 +6,7 @@
  */
 
 //debug
-#define MSP430_SERIAL_DEBUG
+//#define MSP430_SERIAL_DEBUG
 #include "spi_msp430.h"
 
 #include "RF24.h"
@@ -155,6 +155,7 @@ int main(void)
 
 	while(1)
 	{
+
 		// First, scan potentiometers
 		uint8_t buttons;
 		adc_sample(ADC_values);
@@ -188,7 +189,7 @@ int main(void)
 			radio.startListening();
 			radio.stopListening();
 
-			//send car controll cmd
+			//send car control cmd
 			if(send_request)
 			{
 				send_request = 0;
@@ -573,7 +574,7 @@ __interrupt void watchdog_timer(void)
 	if(c > 33)
 	{
 		c = 0;
-		send_request = 1;
+		//send_request = 1;
 		GREEN_LED_BLINK
 	}
 }
