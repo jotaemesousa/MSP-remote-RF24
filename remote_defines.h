@@ -16,10 +16,6 @@
 #define COM_SERVO_LEFT		537
 #define ADC_TH				10
 
-#define SERVO_ZERO			80
-#define SERVO_LEFT			116
-#define SERVO_RIGHT			40
-
 #define DRV_ZERO			0
 #define DRV_REAR			-99
 #define DRV_FRONT			99
@@ -27,7 +23,7 @@
 #define ADC_ANALOG_LEFT		3
 #define ADC_ANALOG_RIGHT	0
 
-#define SEND_MSG_TIME		64
+#define SEND_MSG_TIME		20
 
 #define ASK_BIT				0x10
 

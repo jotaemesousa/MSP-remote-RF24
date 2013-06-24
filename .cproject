@@ -87,6 +87,7 @@
 									<listOptionValue builtIn="false" value="MSP430"/>
 									<listOptionValue builtIn="false" value="DELAY_MSP430"/>
 								</option>
+								<option id="dk.xpg.msp430eclipse.compiler.option.optimization.flags.798687944" superClass="dk.xpg.msp430eclipse.compiler.option.optimization.flags" value="-fpack-struct" valueType="string"/>
 								<inputType id="dk.xpg.msp430eclipse.tool.compiler.gcc.input.39028044" name="C Source File" superClass="dk.xpg.msp430eclipse.tool.compiler.gcc.input"/>
 								<inputType id="dk.xpg.msp430eclipse.tool.compiler.gcc.input.cc.976582994" name="C++ Source File" superClass="dk.xpg.msp430eclipse.tool.compiler.gcc.input.cc"/>
 							</tool>

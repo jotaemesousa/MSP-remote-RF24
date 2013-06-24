@@ -219,7 +219,7 @@ int main(void)
 				}
 
 			}
-
+			cio_printf("%i\n", millis());
 			if(!timeout)
 			{
 				uint8_t response;
@@ -574,7 +574,7 @@ __interrupt void watchdog_timer(void)
 	if(c > 33)
 	{
 		c = 0;
-		//send_request = 1;
+		send_request = 1;
 		GREEN_LED_BLINK
 	}
 }
