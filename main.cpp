@@ -219,7 +219,10 @@ int main(void)
 				}
 
 			}
+
+#ifdef MSP430_SERIAL_DEBUG
 			cio_printf("%i\n", millis());
+#endif
 			if(!timeout)
 			{
 				uint8_t response;
