@@ -14,18 +14,18 @@
 #define COM_SERVO_ZERO		645
 #define COM_SERVO_RIGHT		733
 #define COM_SERVO_LEFT		537
-#define ADC_TH				10
+#define ADC_TH			10
 
-#define DRV_ZERO			0
-#define DRV_REAR			-99
-#define DRV_FRONT			99
+#define DRV_ZERO		0
+#define DRV_REAR		-99
+#define DRV_FRONT		99
 
 #define ADC_ANALOG_LEFT		3
 #define ADC_ANALOG_RIGHT	0
 
-#define SEND_MSG_TIME		20
+#define SEND_MSG_TIME		40
 
-#define ASK_BIT				0x10
+#define ASK_BIT			0x10
 
 typedef struct ROSpberryRemote
 {
