@@ -410,60 +410,63 @@ void adc_sample( unsigned int *ADC_ptr)
 void convert_values(RC_remote *RC_cmd, unsigned int *adc)
 {
 	int d,s;
-	d = adc[ADC_ANALOG_LEFT] - analog_left.center;
-	s = adc[ADC_ANALOG_RIGHT] - analog_right.center;
+	d = adc[ADC_ANALOG_LEFT];
+	s = adc[ADC_ANALOG_RIGHT];
 	RC_cmd->linear = 0;
-	RC_cmd->steer = 0;
+	RC_cmd->steer = s;
 
-	if(d < analog_left.deadzone && d > -analog_left.deadzone)
+	int16_t d_centered = adc[ADC_ANALOG_LEFT] - analog_left.center;
+	int16_t s_centered = adc[ADC_ANALOG_RIGHT] - analog_right.center;
+
+	if(d_centered < analog_left.deadzone && d_centered > -analog_left.deadzone)
 	{
 		RC_cmd->linear = 0;
 	}
-	else if(d >= analog_left.max - analog_left.center)
+	else if(d_centered >= analog_left.max - analog_left.center)
 	{
 		RC_cmd->linear = 127;
 		activity = true;
 	}
-	else if(d < 0 && d > analog_left.min - analog_left.center)
+	else if(d_centered < 0 && d_centered > analog_left.min - analog_left.center)
 	{
 		RC_cmd->linear = map_value(d, analog_left.min, (analog_left.center - analog_left.deadzone), -127, 0, false);
 		//RC_cmd->linear = (-d * 127)/ (analog_left.min - analog_left.center);
 		activity = true;
 	}
-	else if(d > 0 && d < analog_left.max - analog_left.center)
+	else if(d_centered > 0 && d_centered < analog_left.max - analog_left.center)
 	{
 		RC_cmd->linear = map_value(d, analog_left.center + analog_left.deadzone, analog_left.max, 0, 127, false);
 		//RC_cmd->linear = (d * 127)/ (analog_left.max - analog_left.center);
 		activity = true;
 	}
-	else if(d <= (analog_left.min - analog_left.center))
+	else if(d_centered <= (analog_left.min - analog_left.center))
 	{
 		RC_cmd->linear = -127;
 		activity = true;
 	}
 
-	if(s < analog_right.deadzone && s > -analog_right.deadzone)
+	if(s_centered < analog_right.deadzone && s_centered > -analog_right.deadzone)
 	{
 		RC_cmd->steer = 0;
 	}
-	else if(s >= analog_right.max - analog_right.center)
+	else if(s_centered >= analog_right.max - analog_right.center)
 	{
 		RC_cmd->steer = 127;
 		activity = true;
 	}
-	else if(s < 0 && s >= analog_right.min - analog_right.center)
+	else if(s_centered < 0 && s_centered >= analog_right.min - analog_right.center)
 	{
 		RC_cmd->steer = map_value(s, analog_right.min, (analog_right.center - analog_right.deadzone), -127, 0, false);
 		//RC_cmd->steer = (-s * 127)/ (analog_right.min - analog_right.center);
 		activity = true;
 	}
-	else if(s > 0 && s <= analog_right.max - analog_right.center)
+	else if(s_centered > 0 && s_centered <= analog_right.max - analog_right.center)
 	{
 		RC_cmd->steer = map_value(s, analog_right.center + analog_right.deadzone, analog_right.max, 0, 127, false);
 		//RC_cmd->steer = (s * 127)/ (analog_right.max - analog_right.center);
 		activity = true;
 	}
-	else if(s <= analog_right.min - analog_right.center)
+	else if(s_centered <= analog_right.min - analog_right.center)
 	{
 		RC_cmd->steer = -127;
 		activity = true;
