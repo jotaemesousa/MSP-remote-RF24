@@ -202,14 +202,14 @@ uint8_t RF24::get_status(void)
 
 void RF24::print_status(uint8_t status)
 {
-  printf_P(PSTR("STATUS\t\t = %x RX_DR=%x TX_DS=%x MAX_RT=%x RX_P_NO=%x TX_FULL=%x\r\n"),
-           status,
-           (status & _BV(RX_DR))?1:0,
-           (status & _BV(TX_DS))?1:0,
-           (status & _BV(MAX_RT))?1:0,
-           ((status >> RX_P_NO) & 0b111),
-           (status & _BV(TX_FULL))?1:0
-          );
+	printf_P(PSTR("STATUS\t\t = %x RX_DR=%x TX_DS=%x MAX_RT=%x RX_P_NO=%x TX_FULL=%x\r\n"),
+			status,
+			(status & _BV(RX_DR))?1:0,
+					(status & _BV(TX_DS))?1:0,
+							(status & _BV(MAX_RT))?1:0,
+									((status >> RX_P_NO) & 0b111),
+									(status & _BV(TX_FULL))?1:0
+	);
 
 }
 
@@ -228,32 +228,32 @@ void RF24::print_observe_tx(uint8_t value)
 
 void RF24::print_byte_register(const char* name, uint8_t reg, uint8_t qty)
 {
-  char extra_tab = strlen_P(name) < 8 ? '\t' : 0;
-  printf_P(PSTR(PRIPSTR"\t%c ="),name,extra_tab);
-  while (qty--)
-    printf_P(PSTR(" %x"),read_register(reg++));
-  printf_P(PSTR("\r\n"));
+	char extra_tab = strlen_P(name) < 8 ? '\t' : 0;
+	printf_P(PSTR(PRIPSTR"\t%c ="),name,extra_tab);
+	while (qty--)
+		printf_P(PSTR(" %x"),read_register(reg++));
+	printf_P(PSTR("\r\n"));
 }
 
 /****************************************************************************/
 
 void RF24::print_address_register(const char* name, uint8_t reg, uint8_t qty)
 {
-  char extra_tab = strlen_P(name) < 8 ? '\t' : 0;
-  printf_P(PSTR(PRIPSTR"\t%c ="),name,extra_tab);
+	char extra_tab = strlen_P(name) < 8 ? '\t' : 0;
+	printf_P(PSTR(PRIPSTR"\t%c ="),name,extra_tab);
 
-  while (qty--)
-  {
-    uint8_t buffer[5];
-    read_register(reg++,buffer,sizeof buffer);
+	while (qty--)
+	{
+		uint8_t buffer[5];
+		read_register(reg++,buffer,sizeof buffer);
 
-    printf_P(PSTR(" 0x"));
-    uint8_t* bufptr = buffer + sizeof buffer;
-    while( --bufptr >= buffer )
-      printf_P(PSTR("%x"),*bufptr);
-  }
+		printf_P(PSTR(" 0x"));
+		uint8_t* bufptr = buffer + sizeof buffer;
+		while( --bufptr >= buffer )
+			printf_P(PSTR("%x"),*bufptr);
+	}
 
-  printf_P(PSTR("\r\n"));
+	printf_P(PSTR("\r\n"));
 }
 
 /****************************************************************************/
@@ -269,19 +269,19 @@ RF24::RF24():
 
 void RF24::setChannel(uint8_t channel)
 {
-  // TODO: This method could take advantage of the 'wide_band' calculation
-  // done in setChannel() to require certain channel spacing.
+	  // TODO: This method could take advantage of the 'wide_band' calculation
+	  // done in setChannel() to require certain channel spacing.
 
-  const uint8_t max_channel = 127;
-  write_register(RF_CH,min(channel,max_channel));
+	  const uint8_t max_channel = 127;
+	  write_register(RF_CH,min(channel,max_channel));
 }
 
 /****************************************************************************/
 
 void RF24::setPayloadSize(uint8_t size)
 {
-  const uint8_t max_payload_size = 32;
-  payload_size = min(size,max_payload_size);
+	  const uint8_t max_payload_size = 32;
+	  payload_size = min(size,max_payload_size);
 }
 
 /****************************************************************************/

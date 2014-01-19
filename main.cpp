@@ -56,7 +56,7 @@ struct timer_msp subtract(struct timer_msp a, struct timer_msp b);
 void refresh_activity(void);
 void write_calibration_to_flash(Analog p1, Analog p2);
 void read_calibration_from_flash(Analog &p1, Analog &p2);
-
+int16_t map_value(int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max, bool trunc);
 
 struct timer_msp timer_sleep;
 unsigned int ADC_values[4];
@@ -76,8 +76,8 @@ int main(void)
 	WDTCTL = WDT_MDLY_32;                     // Set Watchdog Timer interval to ~30ms
 	IE1 |= WDTIE;
 
-	BCSCTL1 = CALBC1_1MHZ;            // Set DCO to 1MHz
-	DCOCTL = CALDCO_1MHZ;
+	BCSCTL1 = CALBC1_8MHZ;            // Set DCO to 1MHz
+	DCOCTL = CALDCO_8MHZ;
 
 	// setup power pin
 	setup_power();
@@ -120,7 +120,7 @@ int main(void)
 	RF24 radio = RF24();
 
 	// Radio pipe addresses for the 2 nodes to communicate.
-	const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
+	const uint64_t pipes[3] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
 
 	// Setup and configure rf radio
 	radio.begin();
@@ -339,19 +339,19 @@ void calibrate(void)
 
 		adc_sample(ADC_values);
 
-		if(ADC_values[ADC_ANALOG_LEFT] > analog_left.max)
+		if(ADC_values[ADC_ANALOG_LEFT] > (unsigned int)analog_left.max)
 		{
 			analog_left.max = ADC_values[ADC_ANALOG_LEFT];
 		}
-		if(ADC_values[ADC_ANALOG_RIGHT] > analog_right.max)
+		if(ADC_values[ADC_ANALOG_RIGHT] > (unsigned int)analog_right.max)
 		{
 			analog_right.max = ADC_values[ADC_ANALOG_RIGHT];
 		}
-		if(ADC_values[ADC_ANALOG_LEFT] < analog_left.min)
+		if(ADC_values[ADC_ANALOG_LEFT] < (unsigned int)analog_left.min)
 		{
 			analog_left.min = ADC_values[ADC_ANALOG_LEFT];
 		}
-		if(ADC_values[ADC_ANALOG_RIGHT] < analog_right.min)
+		if(ADC_values[ADC_ANALOG_RIGHT] < (unsigned int)analog_right.min)
 		{
 			analog_right.min = ADC_values[ADC_ANALOG_RIGHT];
 		}
@@ -404,8 +404,8 @@ void adc_sample( unsigned int *ADC_ptr)
 
 	ADC10SA = (unsigned int)ADC_ptr;     	// Data buffer start
 
-    ADC10CTL0 |= ENC + ADC10SC;             // Sampling and conversion start
-    __bis_SR_register(LPM0_bits + GIE);        			// LPM0, ADC10_ISR will force exit
+	ADC10CTL0 |= ENC + ADC10SC;             // Sampling and conversion start
+	__bis_SR_register(LPM0_bits + GIE);        			// LPM0, ADC10_ISR will force exit
 }
 void convert_values(RC_remote *RC_cmd, unsigned int *adc)
 {
@@ -426,12 +426,14 @@ void convert_values(RC_remote *RC_cmd, unsigned int *adc)
 	}
 	else if(d < 0 && d > analog_left.min - analog_left.center)
 	{
-		RC_cmd->linear = (-d * 127)/ (analog_left.min - analog_left.center);
+		RC_cmd->linear = map_value(d, analog_left.min, (analog_left.center - analog_left.deadzone), -127, 0, false);
+		//RC_cmd->linear = (-d * 127)/ (analog_left.min - analog_left.center);
 		activity = true;
 	}
 	else if(d > 0 && d < analog_left.max - analog_left.center)
 	{
-		RC_cmd->linear = (d * 127)/ (analog_left.max - analog_left.center);
+		RC_cmd->linear = map_value(d, analog_left.center + analog_left.deadzone, analog_left.max, 0, 127, false);
+		//RC_cmd->linear = (d * 127)/ (analog_left.max - analog_left.center);
 		activity = true;
 	}
 	else if(d <= (analog_left.min - analog_left.center))
@@ -451,12 +453,14 @@ void convert_values(RC_remote *RC_cmd, unsigned int *adc)
 	}
 	else if(s < 0 && s >= analog_right.min - analog_right.center)
 	{
-		RC_cmd->steer = (-s * 127)/ (analog_right.min - analog_right.center);
+		RC_cmd->steer = map_value(s, analog_right.min, (analog_right.center - analog_right.deadzone), -127, 0, false);
+		//RC_cmd->steer = (-s * 127)/ (analog_right.min - analog_right.center);
 		activity = true;
 	}
 	else if(s > 0 && s <= analog_right.max - analog_right.center)
 	{
-		RC_cmd->steer = (s * 127)/ (analog_right.max - analog_right.center);
+		RC_cmd->steer = map_value(s, analog_right.center + analog_right.deadzone, analog_right.max, 0, 127, false);
+		//RC_cmd->steer = (s * 127)/ (analog_right.max - analog_right.center);
 		activity = true;
 	}
 	else if(s <= analog_right.min - analog_right.center)
@@ -464,7 +468,6 @@ void convert_values(RC_remote *RC_cmd, unsigned int *adc)
 		RC_cmd->steer = -127;
 		activity = true;
 	}
-
 
 #ifdef MSP430_SERIAL_DEBUG
 	cio_printf("%i %i \n", RC_cmd->linear, RC_cmd->steer);
@@ -561,20 +564,32 @@ void read_calibration_from_flash(Analog &p1, Analog &p2)
 	p2.max = temp_value;
 }
 
+int16_t map_value(int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max, bool trunc)
+{
+	if(trunc)
+	{
+		int16_t temp = (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+		if(temp > out_max) temp = out_max;
+		if(temp < out_min) temp = out_min;
+		return temp;
+	}
+	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
 // ADC10 interrupt service routine
 #pragma vector=ADC10_VECTOR
 __interrupt void ADC10_ISR(void)
 {
-  __bic_SR_register_on_exit(LPM0_bits + GIE);        // Clear CPUOFF bit from 0(SR)
+	__bic_SR_register_on_exit(LPM0_bits + GIE);        // Clear CPUOFF bit from 0(SR)
 }
 
 // Watchdog Timer interrupt service routine
 #pragma vector=WDT_VECTOR
 __interrupt void watchdog_timer(void)
 {
-	static char c = 0;
+	static int c = 0;
 	c++;
-	if(c > 33)
+	if(c > 264)
 	{
 		c = 0;
 		send_request = 1;
