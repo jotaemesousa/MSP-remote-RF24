@@ -13,7 +13,7 @@
 #include <msp430.h>
 #include "remote_defines.h"
 #include "flash.h"
-
+#include <math.h>
 
 extern "C"
 {
@@ -51,8 +51,8 @@ void setup_power(void);
 void power_on(void);
 void power_off(void);
 void calibrate(void);
-void read_buttons(uint8_t &buttons);
-struct timer_msp subtract(struct timer_msp a, struct timer_msp b);
+void read_buttons(uint8_t &buttons, RC_remote &remote);
+//struct timer_msp subtract(struct timer_msp a, struct timer_msp b);
 void refresh_activity(void);
 void write_calibration_to_flash(Analog p1, Analog p2);
 void read_calibration_from_flash(Analog &p1, Analog &p2);
@@ -65,7 +65,8 @@ bool remote_on = true;
 bool activity = true;
 unsigned long int last_blink_millis = 0;
 Analog analog_left, analog_right;
-struct timer_msp activity_time;
+unsigned long int activity_time;
+unsigned long int switch_off_button_timer;
 bool start_list = 0;
 bool send_request= 0;
 
@@ -159,7 +160,7 @@ int main(void)
 		// First, scan potentiometers
 		uint8_t buttons;
 		adc_sample(ADC_values);
-		read_buttons(buttons);
+		read_buttons(buttons, ferrari);
 		ferrari.buttons = buttons;
 
 		if(buttons == 0x0F)			// All buttons pressed...
@@ -228,7 +229,7 @@ int main(void)
 				uint8_t response;
 				radio.read( &response, sizeof(uint8_t) );
 
-				if(response == 1)
+				if(response)
 				{
 					RED_LED_ON;
 				}
@@ -297,9 +298,7 @@ void calibrate(void)
 	GREEN_LED_OFF;
 	RED_LED_OFF;
 	activity = true;
-	activity_time.s = timer0.s;
-	activity_time.ms = timer0.ms;
-
+	activity_time = millis();
 	calibrated = false;
 	adc_sample(ADC_values);
 
@@ -367,13 +366,22 @@ void calibrate(void)
 	{
 		refresh_activity();
 	}
+
+	//	analog_left.min -= 5;
+	//	analog_right.max -= 5;
+	//	analog_left.min += 5;
+	//	analog_right.min += 5;
+
 	GREEN_LED_OFF;
 	RED_LED_OFF;
 }
 
-void read_buttons(uint8_t &buttons)
+void read_buttons(uint8_t &buttons, RC_remote &remote)
 {
 	buttons = 0x00;
+	static uint8_t switch_off_button_on = 0;
+	static uint8_t ready_to_power_off= 0;
+
 	if((~P2IN & L1_BUTTON) == L1_BUTTON)
 	{
 		buttons |= 0x01;
@@ -384,6 +392,7 @@ void read_buttons(uint8_t &buttons)
 		buttons |= 0x02;
 		activity = true;
 	}
+
 	if((~P2IN & R1_BUTTON) == R1_BUTTON)
 	{
 		buttons |= 0x04;
@@ -393,6 +402,35 @@ void read_buttons(uint8_t &buttons)
 	{
 		buttons |= 0x08;
 		activity = true;
+
+		if(!switch_off_button_on)
+		{
+			switch_off_button_timer = millis();
+			ready_to_power_off = 1;
+		}
+		switch_off_button_on = 1;
+	}
+	else
+	{
+		switch_off_button_on = 0;
+	}
+
+	// switch off procedure
+	if(ready_to_power_off)
+	{
+		if(fabs(remote.linear) <= 20 && fabs(remote.steer) <= 20 && switch_off_button_on &&
+				(P2IN & (L1_BUTTON | L2_BUTTON | R1_BUTTON)) == (L1_BUTTON | L2_BUTTON | R1_BUTTON))
+		{
+			if(millis() - switch_off_button_timer > 2500)
+			{
+				power_off();
+			}
+		}
+	}
+	else
+	{
+		switch_off_button_timer = millis();
+		ready_to_power_off = 0;
 	}
 }
 
@@ -481,16 +519,12 @@ void refresh_activity(void)
 {
 	if(activity)
 	{
-		activity_time.s = timer0.s;
-		activity_time.ms = timer0.ms;
+		activity_time = millis();
 		activity = false;
 	}
 	else
 	{
-		struct timer_msp temp;
-		temp = subtract(timer0, activity_time);
-
-		if(temp.s > 20)
+		if(millis() - activity_time > 20000)
 		{
 			power_off();
 		}
