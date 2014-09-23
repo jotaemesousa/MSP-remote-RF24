@@ -42,6 +42,7 @@ extern "C"
 
 
 // Function prototypes
+void parseResponse(uint8_t resp);
 void setup_adc(void);
 void adc_sample(unsigned int *ADC_ptr);
 void convert_values(RC_remote *RC_cmd, unsigned int *adc);
@@ -69,6 +70,8 @@ unsigned long int activity_time;
 unsigned long int switch_off_button_timer;
 bool start_list = 0;
 bool send_request= 0;
+uint8_t auto_off = 1, force_off = 0;
+uint16_t timer_off = 20;
 
 // main loop
 int main(void)
@@ -165,9 +168,9 @@ int main(void)
 
 		if(buttons == 0x0F)			// All buttons pressed...
 		{
-			// Then, stop listening so we can talk.
-			radio.startListening();
-			radio.stopListening();
+			//			// Then, stop listening so we can talk.
+			//			radio.startListening();
+			//			radio.stopListening();
 
 			// calibrate remote
 			calibrate();
@@ -186,9 +189,7 @@ int main(void)
 #ifdef MSP430_SERIAL_DEBUG
 			cio_printf("%i %i \n", ferrari.linear, ferrari.steer);
 #endif
-			// Then, stop listening so we can talk.
-			radio.startListening();
-			radio.stopListening();
+
 
 			//send car control cmd
 			if(send_request)
@@ -197,8 +198,10 @@ int main(void)
 				start_list = 1;
 				ferrari.buttons |= ASK_BIT;
 			}
+			// Then, stop listening so we can talk.
+			radio.stopListening();
 			radio.write(&ferrari, sizeof(RC_remote));
-
+			radio.startListening();
 		}
 
 		if(start_list)
@@ -229,14 +232,7 @@ int main(void)
 				uint8_t response;
 				radio.read( &response, sizeof(uint8_t) );
 
-				if(response)
-				{
-					RED_LED_ON;
-				}
-				else
-				{
-					RED_LED_OFF;
-				}
+				parseResponse(response);
 			}
 			radio.stopListening();
 		}
@@ -252,6 +248,21 @@ int main(void)
 
 }
 
+void parseResponse(uint8_t resp)
+{
+	if(resp & LED_BIT)
+	{
+		RED_LED_ON;
+	}
+	else
+	{
+		RED_LED_OFF;
+	}
+
+	auto_off = (resp & AUTO_OFF_BIT) ? 1 : 0;
+	force_off = (resp & FORCE_OFF_BIT) ? 1 : 0;
+	timer_off = (resp >> 4) ? (resp >> 4)*10 : timer_off;
+}
 
 void setup_adc(void)
 {
@@ -524,7 +535,14 @@ void refresh_activity(void)
 	}
 	else
 	{
-		if(millis() - activity_time > 20000)
+		if(millis() - activity_time > (timer_off * 1000))
+		{
+			if(auto_off)
+			{
+				power_off();
+			}
+		}
+		if(force_off)
 		{
 			power_off();
 		}

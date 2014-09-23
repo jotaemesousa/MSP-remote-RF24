@@ -27,6 +27,10 @@
 
 #define ASK_BIT			0x10
 
+#define LED_BIT			0x01
+#define AUTO_OFF_BIT	0x02
+#define FORCE_OFF_BIT	0x04
+
 typedef struct ROSpberryRemote
 {
 	int16_t linear;

@@ -45,8 +45,8 @@ typedef enum { RF24_CRC_DISABLED = 0, RF24_CRC_8, RF24_CRC_16 } rf24_crclength_e
 class RF24
 {
 private:
-  //uint8_t ce_pin; /**< "Chip Enable" pin, activates the RX or TX role */
-  //uint8_t csn_pin; /**< SPI Chip select */
+  uint8_t ce_pin; /**< "Chip Enable" pin, activates the RX or TX role */
+  uint8_t csn_pin; /**< SPI Chip select */
   bool wide_band; /* 2Mbs data rate in use? */
   bool p_variant; /* False for RF24L01 and true for RF24L01P */
   uint8_t payload_size; /**< Fixed size of payloads */
@@ -633,6 +633,15 @@ public:
    * @return true if signal => -64dBm, false if not
    */
   bool testRPD(void) ;
+
+  /**
+   * Test whether this is a real radio, or a mock shim for
+   * debugging.  Setting either pin to 0xff is the way to
+   * indicate that this is not a real radio.
+   *
+   * @return true if this is a legitimate radio 
+   */
+  bool isValid() { return ce_pin != 0xff && csn_pin != 0xff; } 
 
   /**@}*/
 };

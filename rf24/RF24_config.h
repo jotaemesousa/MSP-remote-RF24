@@ -1,3 +1,4 @@
+
 /*
  Copyright (C) 2011 J. Coliz <maniacbug@ymail.com>
 
@@ -23,6 +24,7 @@
 #include <msp430.h>
 extern "C"{
 #include "conio/conio.h"
+#include "timer_msp.h"
 }
 #include <stdint.h>
 #include <stdio.h>
@@ -60,7 +62,7 @@ extern "C"{
 #define PRIPSTR "%S"
 #elif defined(STELLARIS)
 extern "C"{
-#include "../utils/uartstdio.h"
+#include "utils/uartstdio.h"
 extern uint32_t millis();
 #define printf_P UARTprintf
 }
@@ -81,7 +83,6 @@ typedef uint16_t prog_uint16_t;
 #define pgm_read_word(p) (*(p))
 #define PRIPSTR "%s"
 
-
 #else
 typedef char const char;
 typedef uint16_t prog_uint16_t;
@@ -89,11 +90,9 @@ typedef uint16_t prog_uint16_t;
 #define printf_P printf
 #define strlen_P strlen
 #define PROGMEM
-#define pgm_read_word(p) (*(p))
+#define pgm_read_word(p) (*(p)) 
 #define PRIPSTR "%s"
-extern uint32_t millis();
 #endif
-
 
 #ifndef ARDUINO
 

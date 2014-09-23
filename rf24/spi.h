@@ -19,8 +19,8 @@ void spi_cs_high();
 void spi_ce_low();
 void spi_ce_high();
 
-
 void delay(unsigned long msec);
 void delayMicroseconds(unsigned long usec);
+
 
 #endif /* SPI_H_ */
