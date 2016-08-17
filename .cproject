@@ -26,7 +26,7 @@
 								<option defaultValue="dk.xpg.msp430eclipse.compiler.option.debugging.level.default" id="dk.xpg.msp430eclipse.compiler.option.debugging.level.490508924" name="Debugging Level" superClass="dk.xpg.msp430eclipse.compiler.option.debugging.level" valueType="enumerated"/>
 								<option id="dk.xpg.msp430eclipse.compiler.option.symbols.defined.10290767" name="Defined Symbols (-D)" superClass="dk.xpg.msp430eclipse.compiler.option.symbols.defined" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="MSP430"/>
-									<listOptionValue builtIn="false" value="DELAY_MSP430"/>
+									<listOptionValue builtIn="false" value="DELAY_MSP430=1"/>
 								</option>
 								<option id="dk.xpg.msp430eclipse.compiler.option.includes.paths.1920248277" name="Include paths (-I)" superClass="dk.xpg.msp430eclipse.compiler.option.includes.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="/home/joao/msp430/include/libemb"/>
@@ -35,6 +35,7 @@
 								</option>
 								<option id="dk.xpg.msp430eclipse.compiler.option.optimization.flags.682835541" name="Other optimization flags" superClass="dk.xpg.msp430eclipse.compiler.option.optimization.flags" value="-fpack-struct" valueType="string"/>
 								<option id="dk.xpg.msp430eclipse.compiler.option.language.standard.396349799" name="Standard" superClass="dk.xpg.msp430eclipse.compiler.option.language.standard" value="dk.xpg.msp430eclipse.compiler.option.language.standard.gnu99" valueType="enumerated"/>
+								<option id="dk.xpg.msp430eclipse.compiler.option.symbols.undefined.761365697" name="Undefined Symbols (-U)" superClass="dk.xpg.msp430eclipse.compiler.option.symbols.undefined" valueType="undefDefinedSymbols"/>
 								<inputType id="dk.xpg.msp430eclipse.tool.compiler.gcc.input.1569041386" name="C Source File" superClass="dk.xpg.msp430eclipse.tool.compiler.gcc.input"/>
 								<inputType id="dk.xpg.msp430eclipse.tool.compiler.gcc.input.cc.689716839" name="C++ Source File" superClass="dk.xpg.msp430eclipse.tool.compiler.gcc.input.cc"/>
 							</tool>
@@ -119,10 +120,10 @@
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
-		<configuration configurationName="Release">
+		<configuration configurationName="Debug">
 			<resource resourceType="PROJECT" workspacePath="/MSP_remote_RF24"/>
 		</configuration>
-		<configuration configurationName="Debug">
+		<configuration configurationName="Release">
 			<resource resourceType="PROJECT" workspacePath="/MSP_remote_RF24"/>
 		</configuration>
 	</storageModule>

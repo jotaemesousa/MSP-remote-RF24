@@ -14,6 +14,7 @@
 #include "remote_defines.h"
 #include "flash.h"
 #include <math.h>
+#include "blt_hid.h"
 
 extern "C"
 {
@@ -22,23 +23,6 @@ extern "C"
 #include "serial/serial.h"
 #include "timer_msp.h"
 }
-
-
-// PORT 2
-#define L1_BUTTON		0x02
-#define R1_BUTTON		0x04
-#define L2_BUTTON		0x10
-#define R2_BUTTON		0x20
-
-// PORT 2
-#define RED_LED			0x80
-#define GREEN_LED		0x40
-#define RED_LED_ON		P2OUT |= RED_LED;
-#define RED_LED_OFF		P2OUT &= ~RED_LED;
-#define RED_LED_BLINK	P2OUT ^= RED_LED;
-#define GREEN_LED_ON	P2OUT |= GREEN_LED;
-#define GREEN_LED_OFF	P2OUT &= ~GREEN_LED;
-#define GREEN_LED_BLINK	P2OUT ^= GREEN_LED;
 
 
 // Function prototypes
@@ -58,6 +42,7 @@ void refresh_activity(void);
 void write_calibration_to_flash(Analog p1, Analog p2);
 void read_calibration_from_flash(Analog &p1, Analog &p2);
 int16_t map_value(int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max, bool trunc);
+void serial_init1(unsigned int baudrate);
 
 struct timer_msp timer_sleep;
 unsigned int ADC_values[4];
@@ -72,6 +57,7 @@ bool start_list = 0;
 bool send_request= 0;
 uint8_t auto_off = 1, force_off = 0;
 uint16_t timer_off = 20;
+PadType cmd_select = RF24_ONLY;
 
 // main loop
 int main(void)
@@ -95,9 +81,8 @@ int main(void)
 	// initialize flash
 	flash_init();
 
-#ifdef MSP430_SERIAL_DEBUG
-	serial_init(9600);
-#endif
+	//Init serial port
+	serial_init1(57600);
 
 	// Setup ADC
 	setup_adc();
@@ -115,6 +100,20 @@ int main(void)
 	// interrupts enabled
 	__bis_SR_register(GIE);
 
+	cmd_select = getPadType();
+
+	// configure BLT
+	switch (cmd_select) {
+	case BLT_MOUSE:
+		setBLTHIDMouse();
+		break;
+	case BLT_JOYPAD:
+		setBLTHIDJoypad();
+		break;
+	default:
+		break;
+	}
+
 	// ____________________________________________________________
 	RC_remote ferrari;
 	ferrari.steer = 0;
@@ -130,7 +129,7 @@ int main(void)
 	radio.begin();
 
 	// optionally, increase the delay between retries & # of retries
-	radio.setRetries(15,15);
+	radio.setRetries(15,5);
 
 	// optionally, reduce the payload size.  seems to
 	// improve reliability
@@ -146,7 +145,7 @@ int main(void)
 	radio.startListening();
 
 	// Dump the configuration of the rf unit for debugging
-	radio.printDetails();
+	//radio.printDetails();
 
 	analog_left.deadzone = 15;
 	analog_right.deadzone = 15;
@@ -186,56 +185,78 @@ int main(void)
 
 			// Convert values
 			convert_values(&ferrari, ADC_values);
+
+			// send over blt
+			switch (cmd_select) {
+			case BLT_MOUSE:
+				sendRawMouse(ferrari);
+				break;
+			case BLT_JOYPAD:
+				sendRawJoypad(ferrari);
+				break;
+			case RF24_ONLY:
+				sendRawJoypad(ferrari);
+
+				//send car control cmd
+				if(send_request)
+				{
+					send_request = 0;
+					start_list = 1;
+					ferrari.buttons |= ASK_BIT;
+				}
+				// Then, stop listening so we can talk.
+				radio.stopListening();
+				radio.write(&ferrari, sizeof(RC_remote));
+				radio.startListening();
+				break;
+			default:
+				break;
+			}
+
 #ifdef MSP430_SERIAL_DEBUG
 			cio_printf("%i %i \n", ferrari.linear, ferrari.steer);
 #endif
 
-
-			//send car control cmd
-			if(send_request)
-			{
-				send_request = 0;
-				start_list = 1;
-				ferrari.buttons |= ASK_BIT;
-			}
-			// Then, stop listening so we can talk.
-			radio.stopListening();
-			radio.write(&ferrari, sizeof(RC_remote));
-			radio.startListening();
 		}
-
-		if(start_list)
-		{
-			start_list = 0;
-			radio.startListening();
-
-			__bis_SR_register(GIE);
-			// Wait here until we get a response, or timeout (250ms)
-			bool timeout = false;
-			last_millis = millis();
-
-			while(!radio.available() && !timeout)
+		switch (cmd_select) {
+		case RF24_ONLY:
+			if(start_list)
 			{
+				start_list = 0;
+				radio.startListening();
 
-				if(millis() - last_millis > 100)
+				__bis_SR_register(GIE);
+				// Wait here until we get a response, or timeout (250ms)
+				bool timeout = false;
+				last_millis = millis();
+
+				while(!radio.available() && !timeout)
 				{
-					timeout = true;
+
+					if(millis() - last_millis > 100)
+					{
+						timeout = true;
+					}
+
 				}
 
-			}
-
 #ifdef MSP430_SERIAL_DEBUG
-			cio_printf("%i\n", millis());
+				cio_printf("%i\n", millis());
 #endif
-			if(!timeout)
-			{
-				uint8_t response;
-				radio.read( &response, sizeof(uint8_t) );
+				if(!timeout)
+				{
+					uint8_t response;
+					radio.read( &response, sizeof(uint8_t) );
 
-				parseResponse(response);
+					parseResponse(response);
+				}
+				radio.stopListening();
 			}
-			radio.stopListening();
+			break;
+		default:
+			break;
 		}
+
 
 		// update activity timer
 		refresh_activity();
@@ -400,13 +421,13 @@ void read_buttons(uint8_t &buttons, RC_remote &remote)
 	}
 	if((~P2IN & L2_BUTTON) == L2_BUTTON)
 	{
-		buttons |= 0x02;
+		buttons |= 0x04;
 		activity = true;
 	}
 
 	if((~P2IN & R1_BUTTON) == R1_BUTTON)
 	{
-		buttons |= 0x04;
+		buttons |= 0x02;
 		activity = true;
 	}
 	if((~P2IN & R2_BUTTON) == R2_BUTTON)
@@ -629,6 +650,34 @@ int16_t map_value(int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, in
 		return temp;
 	}
 	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+void serial_init1(unsigned int baudrate)
+{
+	P1SEL    |= UART_TXD;
+	P1SEL2   |= UART_TXD;
+	UCA0CTL1 |= UCSSEL_2;                   // SMCLK
+
+	unsigned char br = (unsigned char)(1000000 / (long)baudrate);
+
+	if(BCSCTL1 == CALBC1_8MHZ)
+	{
+		br = (unsigned char)(8000000 / (long)baudrate);
+	}
+	else if(BCSCTL1 == CALBC1_12MHZ)
+	{
+		br = (unsigned char)(12000000 / (long)baudrate);
+	}
+	else if(BCSCTL1 == CALBC1_16MHZ)
+	{
+		br = (unsigned char)(16000000 / (long)baudrate);
+	}
+
+	UCA0BR0  = br;                          // 1MHz / baudrate
+	UCA0BR1  = 0;                           //
+	UCA0MCTL = UCBRS0;                      // Modulation UCBRSx = 1
+	UCA0CTL1 &= ~UCSWRST;                   // Initialize USCI state machine
+	UC0IE |= UCA0RXIE; // Enable USCI_A0 RX interrupt
 }
 
 // ADC10 interrupt service routine
